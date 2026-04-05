@@ -77,3 +77,41 @@ void PrintBoard(Board* pBoard)
     printf("  +----+----+----+----+----+----+----+----+----+----+\n");
     printf("    A    B    C    D    E    F    G    H    I    J\n\n");
 }
+
+//=============================================================================
+
+void MovePiece(Board* pBoard, int oRank, int oFile, int nRank, int nFile)
+{
+    pBoard->grid[nRank][nFile] = pBoard->grid[oRank][oFile];
+    pBoard->grid[oRank][oFile].color = ' ';
+    pBoard->grid[oRank][oFile].type = ' ';
+}
+
+//=============================================================================
+
+void AnteaterCapture(Board* pBoard, int oRank, int oFile, int nRank, int nFile)
+{
+    int r = oRank;
+    int f = oFile;
+
+    /* Determine direction of the 'hunger' (Horizontal vs Vertical) */
+    int dirR = (nRank > oRank) ? 1 : (nRank < oRank ? -1 : 0);
+    int dirF = (nFile > oFile) ? 1 : (nFile < oFile ? -1 : 0);
+
+    /* The anteater itself starts at oRank/oFile. 
+       We clear every ant from the start up to the chosen end position. */
+    while (1) {
+        /* Clear the square (Eating the ant) */
+        pBoard->grid[r][f].color = ' ';
+        pBoard->grid[r][f].type = ' ';
+
+        if (r == nRank && f == nFile) break;
+
+        r += dirR;
+        f += dirF;
+    }
+
+    /* Place the anteater at the final position eaten */
+    pBoard->grid[nRank][nFile].color = 'w';
+    pBoard->grid[nRank][nFile].type = 'A';
+}

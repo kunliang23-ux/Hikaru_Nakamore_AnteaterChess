@@ -30,6 +30,8 @@ typedef struct {
 
 void InitializeBoard(Board* pBoard);
 void PrintBoard(Board* pBoard);
+void MovePiece(Board* pBoard, int oRank, int oFile, int nRank, int nFile);
+void AnteaterCapture(Board* pBoard, int oRank, int oFile, int nRank, int nFile);
 
 //=============================================================================
 
