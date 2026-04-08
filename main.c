@@ -27,14 +27,38 @@ int main()
     Board gameBoard;
     InitializeBoard(&gameBoard);
 
-    /* Prompt the user for side selection */
-    char playerColor = ' ';
+    /* Prompts user for mode selection */
+    char playerColor = ' ', gameMode = ' ', aiDifficulty = ' ';
     printf("Welcome to Anteater Chess by Team Hikaru Naka-more!\n");
-    
+
+    while (gameMode != '1' && gameMode != '2') {
+        printf("\nPlease Select Mode\n1. Play a Friend\n2. Play Bots\n");
+
+        /* Handle invalid input and clear stdin buffer */
+        if (scanf(" %c", &gameMode) != 1) {
+            while (getchar() != '\n');
+        }
+    }
+
+    /* Skip side selection if PvP */
+    if (gameMode == '1') {
+        playerColor = 'w';
+    }
+    /* Prompts user for ai difficulty (to be used later) */
+    else if (gameMode == '2') {
+        while (aiDifficulty != '1' && aiDifficulty != '2' && aiDifficulty != '3') {
+            printf("\nPlease Select Difficulty\n1. Easy\n2. Medium\n3. Hard\n");
+
+            if (scanf(" %c", &aiDifficulty) != 1) {
+                while (getchar() != '\n');
+            }
+        }
+    }
+
+    /* Prompt the user for side selection */
     while (playerColor != 'w' && playerColor != 'b') {    
         printf("Please choose your side ('w' for white / 'b' for black): ");
         
-        /* Handle invalid input and clear stdin buffer */
         if (scanf(" %c", &playerColor) != 1) {
             while (getchar() != '\n');
         }
@@ -53,9 +77,11 @@ int main()
     while (!gameOver) {
         PrintBoard(&gameBoard);
 
-        if (currentTurn == playerColor) {
-            printf("\nEnter your move (e.g., 'E2 E4'): ");
-        
+        /* PvP if humanTurn is true */
+        int humanTurn = (gameMode == '1' || currentTurn == playerColor);
+        if (humanTurn) {
+            printf("\n%s's turn. Enter your move (e.g., 'E2 E4'): ",  (currentTurn == 'w') ? "White" : "Black");
+            
             if (fgets(moveInput, sizeof(moveInput), stdin) != NULL) {
                 if (sscanf(moveInput, " %c%d %c%d", &fromCol, &fromRow, &toCol, &toRow) == 4) {
                     /* ASCII conversion */
@@ -67,9 +93,14 @@ int main()
                     /* Validate bounds before accessing board array */
                     if ((fRow >= 0 && fRow < ROWS) && (tRow >= 0 && tRow < ROWS) && 
                         (fCol >= 0 && fCol < COLS) && (tCol >= 0 && tCol < COLS)) {
-                        
+                            
                         MovePiece(&gameBoard, fRow, fCol, tRow, tCol);
-                        currentTurn = aiColor;
+                        if (gameMode == '1') {
+                            currentTurn = (currentTurn == 'w') ? 'b' : 'w';
+                        }
+                        else {
+                            currentTurn = aiColor;   
+                        }
                     }
                     else {
                         printf("Error: Coordinates out of bounds.\n");
@@ -86,7 +117,8 @@ int main()
             }
         }
         else {
-            /* Placeholder for AI logic */
+            /* Placeholder for AI mode */
+            printf("Bot Thinking... \n");
             currentTurn = playerColor;
         }
     }
