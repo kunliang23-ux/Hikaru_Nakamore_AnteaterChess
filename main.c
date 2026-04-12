@@ -97,21 +97,19 @@ int main()
                             
                         if (IsValidMove(&gameBoard, fRow, fCol, tRow, tCol, currentTurn)) {
                             ApplyMove(&gameBoard, fRow, fCol, tRow, tCol);
-                        }
-                            
-                        if (gameMode == '1') {
-                            currentTurn = (currentTurn == 'w') ? 'b' : 'w';
+
+                            currentTurn = (gameMode != '1') ? aiColor : (currentTurn == 'w' ? 'b' : 'w');
                         }
                         else {
-                            currentTurn = aiColor;   
+                            printf("Illegal move. Try again.\n");
                         }
                     }
                     else {
-                        printf("Invalid input. Please try again.\n");
+                        printf("Error: Coordinates out of bounds.\n");
                     }
                 }
                 else {
-                    printf("Error: Coordinates out of bounds.\n");
+                    printf("Invalid input. Please try again.\n");
                 }
             }
             else {
