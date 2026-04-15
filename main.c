@@ -6,7 +6,8 @@
  * * Description:
  * Main entry point and game loop state management for the interactive
  * Anteater Chess program. Orchestrates initialization, rendering, and 
- * the main execution loop for the game engine.
+ * the main execution loop for the game engine. Implements persistent I/O
+ * game logging.
  *****************************************************************************/
 
 #include <stdio.h>
@@ -21,6 +22,47 @@
 #define MAX_INPUT_LENGTH 32
 
 //=============================================================================
+
+/*
+ * Static helper to handle file I/O for game logging. 
+ * Must be invoked PRIOR to ApplyMove() to accurately deduce capture states.
+ */
+static void LogMove(FILE* logFile, Board* pBoard, int turnCount, char color, int fRow, int fCol, int tRow, int tCol)
+{
+    if (!logFile) {
+        return;
+    }
+
+    Piece mover = pBoard->grid[fRow][fCol];
+    Piece target = pBoard->grid[tRow][tCol];
+
+    char fFileStr = (char)(fCol + 'A');
+    int fRankStr = fRow + 1;
+    char tFileStr = (char)(tCol + 'A');
+    int tRankStr = tRow + 1;
+
+    const char* colorStr = (color == 'w') ? "White" : "Black";
+    char flags[64] = "";
+
+    /* Evaluate state prior to ApplyMove mutation to deduce optional flags */
+    if (mover.type == 'K' && abs(tCol - fCol) == 2) {
+        strcpy(flags, " (Castling)");
+    }
+    else if (mover.type == 'A' && target.type == 'P' && target.color != color) {
+        strcpy(flags, " (Anteater Capture)");
+    }
+    else if (mover.type == 'P' && IsEnPassant(pBoard, fRow, fCol, tRow, tCol, color)) {
+        strcpy(flags, " (En Passant)");
+    }
+    else if (mover.type == 'P' && ((color == 'w' && tRow == ROWS - 1) || (color == 'b' && tRow == 0))) {
+        strcpy(flags, " (Promotion)");
+    }
+
+    fprintf(logFile, "%d. %s: %c%d -> %c%d%s\n", turnCount, colorStr, fFileStr, fRankStr, tFileStr, tRankStr, flags);
+    
+    /* Flush buffer immediately to prevent data loss on SIGINT or hard crash */
+    fflush(logFile);
+}
 
 int main()
 {
@@ -68,11 +110,18 @@ int main()
     /* Clean up dangling \n after successful scanf */
     while (getchar() != '\n');
 
+    /* Initialize file I/O for game logging */
+    FILE* logFile = fopen("game_log.txt", "w");
+    if (!logFile) {
+        printf("CRITICAL WARNING: Unable to open game_log.txt for writing.\n");
+    }
+
     /* Setup game variables */
     char moveInput[MAX_INPUT_LENGTH];
     char currentTurn = 'w';
     char fromCol, toCol;
     int fromRow, toRow, gameOver = 0;
+    int fullTurnCount = 1;
 
     /* Begin game */
     while (!gameOver) {
@@ -105,7 +154,16 @@ int main()
                         (fCol >= 0 && fCol < COLS) && (tCol >= 0 && tCol < COLS)) {
                             
                         if (IsValidMove(&gameBoard, fRow, fCol, tRow, tCol, currentTurn)) {
+                            
+                            /* Call LogMove before applying state mutations to deduce capture data */
+                            LogMove(logFile, &gameBoard, fullTurnCount, currentTurn, fRow, fCol, tRow, tCol);
+                            
                             ApplyMove(&gameBoard, fRow, fCol, tRow, tCol);
+                            
+                            /* Standard chess turns increment after Black completes their move */
+                            if (currentTurn == 'b') {
+                                fullTurnCount++;
+                            }
                             currentTurn = (currentTurn == 'w') ? 'b' : 'w';
                         }
                         else {
@@ -128,7 +186,7 @@ int main()
         else {
             /* * AI Integration Point: 
              * Must populate fRow, fCol, tRow, tCol using MoveList.c logic 
-             * before calling ApplyMove()
+             * before calling LogMove() and ApplyMove()
              */
             printf("Bot Thinking... \n");
             
@@ -136,6 +194,10 @@ int main()
             printf("AI module not implemented. Exiting.\n");
             gameOver = 1; 
         }
+    }
+
+    if (logFile) {
+        fclose(logFile);
     }
 
     return 0;
